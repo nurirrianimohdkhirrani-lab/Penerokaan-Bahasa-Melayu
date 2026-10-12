@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#061827">
+  <title>Penerokaan Bahasa Melayu</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <style>
+    :root { --cyan: #22d3ee; --dark: #061827; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--dark); color: #eefcff; font-family: "Fredoka", sans-serif;
+      background-image: linear-gradient(#22d3ee08 1px, transparent 1px), linear-gradient(90deg, #22d3ee08 1px, transparent 1px);
+      background-size: 28px 28px; min-height: 100vh;
+    }
+    button, input, select { font: inherit; }
+    button { touch-action: manipulation; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #fde047; outline-offset: 4px; }
+    button:disabled { cursor: not-allowed; opacity: .6; }
+    .pixel { font-family: "Press Start 2P", monospace; line-height: 1.9; }
+    .panel { background: linear-gradient(145deg, #14364d, #0b2235); border: 2px solid #22617a; box-shadow: 6px 6px 0 #020d16; }
+    .neon { background: #22d3ee; color: #052235; border: 3px solid #a5f3fc; box-shadow: 0 0 18px #22d3ee45, 0 6px 0 #087b95; transition: all .2s; }
+    .neon:hover:not(:disabled) { transform: translateY(-2px); }
+    .ghost { background: #12344a; border: 2px solid #28617a; transition: all .2s; }
+    .ghost:hover:not(:disabled) { background: #1b4c65; border-color: #22d3ee; }
+    .answer { min-height: 72px; text-align: left; border: 2px solid #31627c; background: #102f45; transition: all .2s; }
+    .answer:hover:not(:disabled) { border-color: #67e8f9; transform: translateY(-2px); background: #17455b; }
+    .answer.correct { background: #124c3e; border-color: #4ade80; }
+    .answer.wrong { background: #59253a; border-color: #fb7185; }
+    [hidden] { display: none !important; }
+    .floating { animation: float 3s ease-in-out infinite; }
+    @keyframes float { 50% { transform: translateY(-8px); } }
+    .heart-lost { color: #334155 !important; }
+    .word { border: 2px solid #67e8f9; background: #16455e; border-radius: 12px; padding: 10px 16px; cursor: pointer; font-size: 20px; }
+    .dropzone { min-height: 80px; border: 2px dashed #478da5; border-radius: 16px; background: #051b2a; }
+    #modal { background: #020a14dc; backdrop-filter: blur(6px); }
+    .toast { animation: appear .25s ease-out; }
+    @keyframes appear { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    progress { appearance: none; width: 100%; height: 12px; border: 0; border-radius: 999px; overflow: hidden; background: #061827; }
+    progress::-webkit-progress-bar { background: #061827; }
+    progress::-webkit-progress-value { background: #22d3ee; border-radius: 999px; }
+    progress::-moz-progress-bar { background: #22d3ee; }
+    summary { cursor: pointer; }
+    .certificate { background: #fffdf5; color: #14354a; border: 8px double #0891b2; padding: 30px; text-align: center; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+    @media print {
+      body { background: white !important; }
+      body > * { display: none !important; }
+      body > #modal { display: block !important; position: static !important; background: white !important; padding: 0 !important; }
+      #modal > div { max-width: none !important; max-height: none !important; overflow: visible !important; border: 0 !important; box-shadow: none !important; background: white !important; }
+      #modalHeader, #modalActions { display: none !important; }
+      .certificate { margin: 0; padding: 45px 25px; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
+    <header class="flex items-center justify-between gap-3 mb-8">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-cyan-300 text-slate-900 grid place-items-center text-2xl border-4 border-cyan-100">
+          <i class="fas fa-gamepad" aria-hidden="true"></i>
+        </div>
+        <div>
+          <p class="pixel text-cyan-300 text-[9px] sm:text-xs">DUNIA BAHASA</p>
+          <p class="text-sm text-slate-300">Belajar • Bermain • Berjaya</p>
+        </div>
+      </div>
+      <button id="soundButton" class="ghost rounded-xl w-12 h-12 text-xl" aria-label="Matikan kesan bunyi" aria-pressed="true">
+        <i class="fas fa-volume-high" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <main>
+      <section id="startScreen">
+        <div class="text-center mb-8">
+          <div class="floating text-7xl mb-5" aria-hidden="true">👾</div>
+          <span class="inline-block text-cyan-200 bg-cyan-950 border border-cyan-700 rounded-full px-4 py-1 mb-4">Pengembaraan untuk sekolah rendah</span>
+          <h1 class="pixel text-cyan-300 text-xl sm:text-3xl">PENEROKAAN<br>BAHASA MELAYU</h1>
+          <p class="text-lg sm:text-xl text-slate-300 mt-4">Jom kumpul bintang dan jadi wira bahasa!</p>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-6">
+          <div class="panel rounded-3xl p-6 lg:col-span-2">
+            <h2 class="text-2xl font-semibold mb-5">🚀 Sediakan pengembaraan kamu</h2>
+            <div class="grid sm:grid-cols-2 gap-5">
+              <div>
+                <label for="playerName" class="block text-lg mb-2">Nama peneroka</label>
+                <input id="playerName" maxlength="40" autocomplete="nickname" placeholder="Contoh: Aisyah" class="w-full rounded-xl bg-slate-950 border-2 border-slate-600 px-4 py-3 text-xl">
+              </div>
+              <div>
+                <label for="levelSelect" class="block text-lg mb-2">Pilih tahap</label>
+                <select id="levelSelect" class="w-full rounded-xl bg-slate-950 border-2 border-slate-600 px-4 py-3 text-xl">
+                  <option value="1">Tahun 1 — Asas Bahasa</option>
+                  <option value="2">Tahun 2 — Bijak Bahasa</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3 my-6">
+              <div class="ghost rounded-2xl p-3 text-center"><div class="text-3xl mb-2">❤️</div><p>5 nyawa</p></div>
+              <div class="ghost rounded-2xl p-3 text-center"><div class="text-3xl mb-2">⏱️</div><p>30 saat</p></div>
+              <div class="ghost rounded-2xl p-3 text-center"><div class="text-3xl mb-2">⭐</div><p>10 soalan</p></div>
+            </div>
+            <button id="startButton" class="neon w-full rounded-2xl py-4 text-2xl font-semibold"><i class="fas fa-play mr-2" aria-hidden="true"></i>Mula Bermain</button>
+            <div class="grid sm:grid-cols-2 gap-3 mt-6">
+              <button id="leaderboardButton" class="ghost rounded-xl py-3 text-lg"><i class="fas fa-trophy text-yellow-300 mr-2" aria-hidden="true"></i>Papan Kedudukan</button>
+              <button id="practiceButton" class="ghost rounded-xl py-3 text-lg"><i class="fas fa-hand text-cyan-300 mr-2" aria-hidden="true"></i>Susun Perkataan</button>
+            </div>
+          </div>
+
+          <aside class="panel rounded-3xl p-6">
+            <h2 class="text-2xl font-semibold mb-4">📖 Panduan Permainan</h2>
+            <details open class="border-b border-slate-600 pb-4 mb-4">
+              <summary class="text-xl text-cyan-200">Bagaimana hendak bermain?</summary>
+              <p class="text-lg text-slate-300 mt-3">Baca soalan dan pilih satu jawapan A, B, C atau D. Jawapan betul memberi 10 mata.</p>
+            </details>
+            <details class="border-b border-slate-600 pb-4 mb-4">
+              <summary class="text-xl text-cyan-200">Bila nyawa berkurang?</summary>
+              <p class="text-lg text-slate-300 mt-3">Jawapan salah atau masa tamat mengurangkan satu nyawa. Permainan tamat apabila nyawa habis.</p>
+            </details>
+            <details>
+              <summary class="text-xl text-cyan-200">Apakah ganjarannya?</summary>
+              <p class="text-lg text-slate-300 mt-3">Kumpul lencana dalam inventori. Habiskan semua soalan dengan nyawa berbaki untuk membuka sijil digital!</p>
+            </details>
+          </aside>
+        </div>
+        <p class="text-center text-slate-400 mt-6 text-sm">Kedudukan disimpan pada pelayar ini. Suara bot bergantung pada sokongan peranti.</p>
+      </section>
+
+      <section id="gameScreen" hidden>
+        <div class="panel rounded-2xl p-4 sm:p-5 mb-6">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div><p id="playerLabel" class="text-xl font-semibold"></p><div id="hearts" class="flex gap-1 text-xl mt-2" aria-label="5 nyawa"></div></div>
+            <div class="flex items-center gap-5">
+              <div class="text-center"><p class="text-slate-300">Mata</p><p id="scoreLabel" class="text-3xl text-yellow-300 font-semibold">0</p></div>
+              <div class="text-center"><p class="text-slate-300">Masa</p><p id="timerLabel" class="text-3xl text-cyan-300 font-semibold">30</p></div>
+              <button id="menuButton" class="ghost rounded-xl p-3 text-xl" aria-label="Buka menu dan inventori"><i class="fas fa-bars" aria-hidden="true"></i></button>
+            </div>
+          </div>
+          <div class="flex justify-between text-sm text-slate-300 mt-4 mb-2"><span id="questionCount">Soalan 1 / 10</span><span id="levelLabel">Tahun 1</span></div>
+          <progress id="gameProgress" max="10" value="0" aria-label="Kemajuan permainan"></progress>
+        </div>
+        <div class="panel rounded-3xl p-5 sm:p-8">
+          <div class="flex justify-between items-center gap-3 mb-5">
+            <span id="categoryLabel" class="bg-cyan-950 border border-cyan-700 px-4 py-2 rounded-full text-cyan-200"></span>
+            <button id="readButton" class="ghost rounded-xl px-4 py-2" aria-label="Dengar soalan"><i class="fas fa-volume-high mr-2" aria-hidden="true"></i>Dengar</button>
+          </div>
+          <div id="questionEmoji" class="text-center text-6xl sm:text-7xl mb-5" aria-hidden="true"></div>
+          <h2 id="questionText" tabindex="-1" class="text-2xl sm:text-3xl font-semibold text-center leading-relaxed mb-7"></h2>
+          <div id="answers" class="grid sm:grid-cols-2 gap-4"></div>
+          <div id="feedback" class="rounded-xl p-4 mt-5 text-lg" role="status" hidden></div>
+          <button id="nextButton" class="neon rounded-xl w-full py-3 text-xl font-semibold mt-5" hidden>Soalan Seterusnya <i class="fas fa-arrow-right ml-2" aria-hidden="true"></i></button>
+        </div>
+      </section>
+
+      <section id="resultScreen" class="max-w-3xl mx-auto" hidden>
+        <div class="panel rounded-3xl p-6 sm:p-10 text-center">
+          <div id="resultEmoji" class="text-7xl mb-5"></div>
+          <h2 id="resultTitle" tabindex="-1" class="pixel text-cyan-300 text-xl sm:text-2xl"></h2>
+          <p id="resultMessage" class="text-xl text-slate-200 mt-4"></p>
+          <div class="grid grid-cols-3 gap-3 my-7">
+            <div class="ghost rounded-2xl p-4"><p class="text-slate-300">Mata</p><p id="finalScore" class="text-3xl text-yellow-300"></p></div>
+            <div class="ghost rounded-2xl p-4"><p class="text-slate-300">Betul</p><p id="finalCorrect" class="text-3xl text-green-300"></p></div>
+            <div class="ghost rounded-2xl p-4"><p class="text-slate-300">Ketepatan</p><p id="finalAccuracy" class="text-3xl text-cyan-300"></p></div>
+          </div>
+          <p id="saveStatus" class="text-slate-300 mb-5"></p>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <button id="replayButton" class="neon rounded-xl py-4 text-xl font-semibold">🔄 Main Lagi</button>
+            <button id="certificateButton" class="ghost rounded-xl py-4 text-xl">📜 Sijil Digital</button>
+            <button id="resultLeaderboardButton" class="ghost rounded-xl py-3 text-lg">🏆 Papan Kedudukan</button>
+            <button id="homeButton" class="ghost rounded-xl py-3 text-lg">🏠 Skrin Mula</button>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="text-center text-slate-400 text-sm mt-8">Penerokaan Bahasa Melayu • Setiap cubaan membantu kamu belajar.</footer>
+  </div>
+
+  <div id="toastContainer" class="fixed bottom-5 left-4 right-4 sm:left-auto sm:w-96 z-[60] space-y-3" role="status" aria-live="polite"></div>
+
+  <div id="modal" class="fixed inset-0 z-50 p-4 flex items-center justify-center" hidden>
+    <div role="dialog" aria-modal="true" aria-labelledby="modalTitle" class="panel rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-auto p-5 sm:p-7">
+      <div id="modalHeader" class="flex justify-between items-center gap-4 mb-5">
+        <h2 id="modalTitle" class="text-2xl font-semibold"></h2>
+        <button id="closeModalButton" class="ghost rounded-xl w-11 h-11 shrink-0" aria-label="Tutup tetingkap"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+      </div>
+      <div id="modalContent"></div>
+      <div id="modalActions" class="mt-5 flex flex-wrap justify-end gap-3"></div>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    const questionBank = [
+      {level:1,category:"Kosa Kata",emoji:"🐱",question:"Apakah nama haiwan ini?",options:["Ayam","Kucing","Ikan","Lembu"],answer:1,explanation:"Haiwan ini ialah kucing."},
+      {level:1,category:"Kata Nama",emoji:"✏️",question:"Apakah alat yang digunakan untuk menulis?",options:["Kasut","Pinggan","Pensel","Bantal"],answer:2,explanation:"Pensel digunakan untuk menulis."},
+      {level:1,category:"Huruf Vokal",emoji:"🔤",question:"Pilih huruf vokal.",options:["B","K","M","A"],answer:3,explanation:"Huruf vokal ialah a, e, i, o dan u."},
+      {level:1,category:"Suku Kata",emoji:"📚",question:"Apakah pecahan suku kata bagi perkataan 'buku'?",options:["bu-ku","buk-u","b-uku","b-u-k-u"],answer:0,explanation:"Perkataan buku mempunyai dua suku kata: bu-ku."},
+      {level:1,category:"Kata Kerja",emoji:"🍚",question:"Ali sedang _____ nasi.",options:["tidur","makan","berlari","melompat"],answer:1,explanation:"Ayat yang betul ialah 'Ali sedang makan nasi.'"},
+      {level:1,category:"Warna",emoji:"🌿",question:"Daun biasanya berwarna _____.",options:["ungu","merah","hijau","biru"],answer:2,explanation:"Daun biasanya berwarna hijau."},
+      {level:1,category:"Kata Lawan",emoji:"🐘",question:"Apakah lawan bagi perkataan 'besar'?",options:["tinggi","panjang","berat","kecil"],answer:3,explanation:"Lawan bagi besar ialah kecil."},
+      {level:1,category:"Anggota Badan",emoji:"👀",question:"Kita melihat menggunakan _____.",options:["mata","telinga","hidung","tangan"],answer:0,explanation:"Mata digunakan untuk melihat."},
+      {level:1,category:"Keluarga",emoji:"👨‍👩‍👧",question:"Ibu kepada ibu kita dipanggil _____.",options:["kakak","nenek","adik","mak cik"],answer:1,explanation:"Ibu kepada ibu kita ialah nenek."},
+      {level:1,category:"Kata Nama",emoji:"🏫",question:"Murid belajar di _____.",options:["pasar","pantai","sekolah","kebun"],answer:2,explanation:"Murid belajar di sekolah."},
+      {level:2,category:"Kata Adjektif",emoji:"🍯",question:"Madu mempunyai rasa yang _____.",options:["pahit","masin","masam","manis"],answer:3,explanation:"Madu mempunyai rasa manis."},
+      {level:2,category:"Kata Sendi Nama",emoji:"🏫",question:"Siti pergi _____ sekolah.",options:["ke","di","dari","pada"],answer:0,explanation:"Kata sendi nama 'ke' menunjukkan arah atau tempat yang dituju."},
+      {level:2,category:"Penjodoh Bilangan",emoji:"🍌",question:"Ayah membeli se_____ pisang.",options:["batang","sikat","ekor","helai"],answer:1,explanation:"Penjodoh bilangan untuk kelompok pisang ialah sikat."},
+      {level:2,category:"Kata Ganti Nama",emoji:"👩‍🏫",question:"Cikgu Lina mengajar kami. _____ sangat baik.",options:["Kami","Mereka","Beliau","Kita"],answer:2,explanation:"'Beliau' digunakan untuk merujuk kepada orang yang dihormati."},
+      {level:2,category:"Kata Lawan",emoji:"🌞",question:"Apakah lawan bagi perkataan 'rajin'?",options:["cekap","pandai","baik","malas"],answer:3,explanation:"Lawan bagi rajin ialah malas."},
+      {level:2,category:"Kata Hubung",emoji:"🍎",question:"Saya suka epal _____ oren.",options:["dan","kerana","tetapi","sambil"],answer:0,explanation:"'Dan' menghubungkan dua perkara, iaitu epal dan oren."},
+      {level:2,category:"Tanda Baca",emoji:"❓",question:"Apakah tanda baca yang sesuai? 'Siapakah nama kamu_____'",options:[".","?",",","!"],answer:1,explanation:"Tanda soal digunakan pada akhir ayat tanya."},
+      {level:2,category:"Kata Kerja",emoji:"🧹",question:"Ibu _____ lantai dengan penyapu.",options:["menjahit","membaca","menyapu","memasak"],answer:2,explanation:"Ibu menyapu lantai dengan penyapu."},
+      {level:2,category:"Simpulan Bahasa",emoji:"🤝",question:"Apakah maksud 'ringan tulang'?",options:["Mudah mengantuk","Suka bermain","Tidak suka bekerja","Rajin membantu"],answer:3,explanation:"Ringan tulang bermaksud rajin bekerja atau membantu."},
+      {level:2,category:"Susunan Ayat",emoji:"📖",question:"Pilih ayat yang betul.",options:["Adik membaca buku.","Buku adik membaca.","Membaca buku adik.","Adik buku membaca."],answer:0,explanation:"Susunan ayat yang betul ialah 'Adik membaca buku.'"}
+    ];
+
+    const $ = id => document.getElementById(id);
+    const STORAGE_KEY = "penerokaan-bm-leaderboard-v1";
+    const SETTINGS_KEY = "penerokaan-bm-settings-v1";
+    const state = {
+      name:"", level:1, questions:[], index:0, lives:5, score:0, correct:0,
+      answered:0, locked:false, active:false, remaining:30, deadline:0,
+      timer:null, sound:true, inventory:[], completed:false, saved:false
+    };
+    let audioContext = null;
+    let modalPreviousFocus = null;
+    let pausedForModal = false;
+    let practice = null;
+
+    function escapeHTML(value) {
+      return String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+    }
+    function readStorage(key, fallback) {
+      try { const value = localStorage.getItem(key); return value ? JSON.parse(value) : fallback; }
+      catch { return fallback; }
+    }
+    function writeStorage(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+      catch { return false; }
+    }
+    function getLeaderboard() {
+      const data = readStorage(STORAGE_KEY, []);
+      if (!Array.isArray(data)) return [];
+      return data.filter(item => item && typeof item.name === "string" && Number.isFinite(item.score) &&
+        Number.isFinite(item.correct) && [1,2].includes(item.level) && typeof item.date === "string")
+        .sort((a,b) => b.score-a.score || b.correct-a.correct).slice(0,20);
+    }
+    function showScreen(id) {
+      ["startScreen","gameScreen","resultScreen"].forEach(screen => $(screen).hidden = screen !== id);
+      window.scrollTo({top:0, behavior:"auto"});
+    }
+    function toast(message, type="info") {
+      const element = document.createElement("div");
+      element.className = "toast panel rounded-xl p-4 text-lg";
+      element.textContent = (type==="success" ? "🌟 " : type==="error" ? "⚠️ " : "💡 ") + message;
+      $("toastContainer").append(element);
+      setTimeout(() => element.remove(), 4000);
+    }
+    function updateSoundButton() {
+      $("soundButton").innerHTML = `<i class="fas fa-volume-${state.sound ? "high" : "xmark"}" aria-hidden="true"></i>`;
+      $("soundButton").setAttribute("aria-label", state.sound ? "Matikan kesan bunyi" : "Hidupkan kesan bunyi");
+      $("soundButton").setAttribute("aria-pressed", String(state.sound));
+    }
+    function unlockAudio() {
+      try {
+        const AudioCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtor) return;
+        if (!audioContext) audioContext = new AudioCtor();
+        if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+      } catch {}
+    }
+    function playSound(type) {
+      if (!state.sound) return;
+      unlockAudio();
+      if (!audioContext || audioContext.state !== "running") return;
+      const tones = type==="correct" ? [523,659,784] : type==="win" ? [523,659,784,1047] : [220,165];
+      tones.forEach((frequency,index) => {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const time = audioContext.currentTime + index * .12;
+        oscillator.type = "square"; oscillator.frequency.value = frequency;
+        gain.gain.setValueAtTime(.035,time); gain.gain.exponentialRampToValueAtTime(.001,time+.12);
+        oscillator.connect(gain); gain.connect(audioContext.destination);
+        oscillator.start(time); oscillator.stop(time+.13);
+      });
+    }
+    function stopSpeech() {
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    }
+    function speakQuestion() {
+      if (!("speechSynthesis" in window)) { toast("Peranti ini tidak menyokong suara bot."); return; }
+      stopSpeech();
+      const question = state.questions[state.index];
+      if (!question) return;
+      const utterance = new SpeechSynthesisUtterance(question.question + ". " + question.options.map((text,i) => `${"ABCD"[i]}. ${text}`).join(". "));
+      utterance.lang = "ms-MY"; utterance.rate = .85;
+      const voices = window.speechSynthesis.getVoices();
+      const voice = voices.find(item => item.lang.toLowerCase().startsWith("ms"));
+      if (voice) utterance.voice = voice;
+      utterance.onerror = event => {
+        if (!["canceled","interrupted"].includes(event.error)) toast("Suara tidak tersedia. Kamu boleh membaca soalan pada skrin.");
+      };
+      window.speechSynthesis.speak(utterance);
+    }
+    function shuffle(items) {
+      const result = [...items];
+      for (let i=result.length-1; i>0; i--) { const j=Math.floor(Math.random()*(i+1)); [result[i],result[j]]=[result[j],result[i]]; }
+      return result;
+    }
+    function clearTimer() { clearInterval(state.timer); state.timer = null; }
+    function renderTimer() {
+      $("timerLabel").textContent = state.remaining;
+      $("timerLabel").classList.toggle("text-red-400", state.remaining <= 10);
+      $("timerLabel").classList.toggle("text-cyan-300", state.remaining > 10);
+    }
+    function startTimer() {
+      clearTimer(); state.deadline = Date.now() + state.remaining * 1000; renderTimer();
+      state.timer = setInterval(() => {
+        if (!state.active || state.locked) return;
+        state.remaining = Math.max(0, Math.ceil((state.deadline-Date.now())/1000));
+        renderTimer();
+        if (state.remaining === 0) answerQuestion(null);
+      }, 200);
+    }
+    function updateHUD() {
+      $("playerLabel").textContent = "👾 " + state.name;
+      $("scoreLabel").textContent = state.score;
+      $("hearts").innerHTML = Array.from({length:5}, (_,i) => `<i class="fas fa-heart ${i<state.lives ? "text-rose-400" : "heart-lost"}" aria-hidden="true"></i>`).join("");
+      $("hearts").setAttribute("aria-label", `${state.lives} nyawa berbaki`);
+      $("questionCount").textContent = `Soalan ${state.index+1} / ${state.questions.length}`;
+      $("levelLabel").textContent = `Tahun ${state.level}`;
+      $("gameProgress").max = state.questions.length;
+      $("gameProgress").value = state.answered;
+    }
+    function awardBadge(id,title,emoji) {
+      if (state.inventory.some(item => item.id === id)) return;
+      state.inventory.push({id,title,emoji}); toast(`Lencana baharu: ${title}!`, "success");
+    }
+    function startGame() {
+      const name = $("playerName").value.trim();
+      if (!name) { toast("Tulis nama kamu dahulu.", "error"); $("playerName").focus(); return; }
+      clearTimer(); stopSpeech();
+      Object.assign(state, {name, level:Number($("levelSelect").value), index:0, lives:5, score:0, correct:0,
+        answered:0, locked:false, active:true, remaining:30, inventory:[], completed:false, saved:false});
+      state.questions = shuffle(questionBank.filter(q => q.level === state.level));
+      unlockAudio(); showScreen("gameScreen"); renderQuestion();
+    }
+    function renderQuestion() {
+      clearTimer(); stopSpeech(); state.locked = false; state.remaining = 30;
+      const question = state.questions[state.index];
+      $("categoryLabel").textContent = question.category;
+      $("questionEmoji").textContent = question.emoji;
+      $("questionText").textContent = question.question;
+      $("feedback").hidden = true; $("nextButton").hidden = true; $("answers").replaceChildren();
+      question.options.forEach((option,index) => {
+        const button = document.createElement("button");
+        button.className = "answer rounded-2xl p-4 flex items-center gap-4 text-xl";
+        const letter = document.createElement("span");
+        letter.className = "w-10 h-10 shrink-0 rounded-xl bg-cyan-900 text-cyan-200 grid place-items-center font-semibold";
+        letter.textContent = "ABCD"[index];
+        const text = document.createElement("span"); text.textContent = option;
+        button.append(letter,text); button.addEventListener("click", () => answerQuestion(index));
+        $("answers").append(button);
+      });
+      updateHUD(); startTimer(); $("questionText").focus({preventScroll:true});
+    }
+    function answerQuestion(choice) {
+      if (!state.active || state.locked || !$("modal").hidden) return;
+      if (choice !== null && Date.now() >= state.deadline) choice = null;
+      state.locked = true; clearTimer(); stopSpeech();
+      const question = state.questions[state.index];
+      const correct = choice === question.answer;
+      state.answered++;
+      if (correct) {
+        state.score += 10; state.correct++; playSound("correct");
+        if (state.correct === 1) awardBadge("first","Langkah Pertama","🌱");
+        if (state.correct === 5) awardBadge("five","Bijak Bahasa","📚");
+        if (state.correct === 10) awardBadge("perfect","Bintang Bahasa","🌟");
+      } else { state.lives--; playSound("wrong"); }
+      [...$("answers").children].forEach((button,index) => {
+        button.disabled = true;
+        if (index === question.answer) {
+          button.classList.add("correct");
+          button.setAttribute("aria-label", `${"ABCD"[index]}. ${question.options[index]}. Jawapan betul.`);
+          const marker = document.createElement("span"); marker.textContent = "✓"; marker.setAttribute("aria-hidden","true"); button.append(marker);
+        }
+        if (index === choice && !correct) {
+          button.classList.add("wrong");
+          const marker = document.createElement("span"); marker.textContent = "✕"; marker.setAttribute("aria-hidden","true"); button.append(marker);
+        }
+      });
+      $("feedback").hidden = false;
+      $("feedback").className = `rounded-xl p-4 mt-5 text-lg ${correct ? "bg-green-950 text-green-200" : "bg-rose-950 text-rose-200"}`;
+      $("feedback").textContent = (correct ? "🌟 Betul! +10 mata. " : choice===null ? "⏰ Masa tamat. Satu nyawa berkurang. " : "💪 Belum tepat. Satu nyawa berkurang. ") + question.explanation;
+      $("nextButton").hidden = false;
+      const finished = state.lives === 0 || state.index === state.questions.length - 1;
+      $("nextButton").textContent = finished ? "Lihat Keputusan 🏁" : "Soalan Seterusnya ➜";
+      updateHUD();
+    }
+    function finishGame() {
+      clearTimer(); stopSpeech(); state.active = false;
+      state.completed = state.answered === state.questions.length && state.lives > 0;
+      if (state.completed) { awardBadge("finish","Penamat Misi","🏆"); playSound("win"); }
+      if (!state.saved) {
+        const entries = getLeaderboard();
+        entries.push({name:state.name, level:state.level, score:state.score, correct:state.correct,
+          completed:state.completed, date:new Date().toISOString()});
+        entries.sort((a,b) => b.score-a.score || b.correct-a.correct);
+        state.saved = writeStorage(STORAGE_KEY, entries.slice(0,20));
+      }
+      $("resultEmoji").textContent = state.completed ? "🏆" : "💪";
+      $("resultTitle").textContent = state.completed ? "MISI SELESAI!" : "CUBA LAGI!";
+      $("resultMessage").textContent = state.completed
+        ? `Tahniah, ${state.name}! Kamu telah menyelesaikan pengembaraan Tahun ${state.level}.`
+        : `${state.name}, nyawa kamu telah habis. Terus berlatih dan cuba lagi!`;
+      $("finalScore").textContent = state.score;
+      $("finalCorrect").textContent = `${state.correct}/${state.answered}`;
+      $("finalAccuracy").textContent = `${Math.round(state.correct/Math.max(1,state.answered)*100)}%`;
+      $("saveStatus").textContent = state.saved ? "✓ Keputusan disimpan dalam papan kedudukan." : "Keputusan tidak dapat disimpan kerana storan pelayar tidak tersedia.";
+      $("certificateButton").disabled = !state.completed;
+      $("certificateButton").textContent = state.completed ? "📜 Sijil Digital" : "🔒 Habiskan Misi untuk Sijil";
+      showScreen("resultScreen"); $("resultTitle").focus({preventScroll:true});
+    }
+    function openModal(title,content,actions=[]) {
+      modalPreviousFocus = document.activeElement;
+      pausedForModal = state.active && !state.locked;
+      if (pausedForModal) { state.remaining = Math.max(0,Math.ceil((state.deadline-Date.now())/1000)); clearTimer(); stopSpeech(); }
+      $("modalTitle").textContent = title; $("modalContent").innerHTML = content; $("modalActions").replaceChildren();
+      actions.forEach(action => {
+        const button = document.createElement("button");
+        button.className = action.primary ? "neon rounded-xl px-5 py-3 text-lg" : "ghost rounded-xl px-5 py-3 text-lg";
+        button.textContent = action.text; button.addEventListener("click", action.run); $("modalActions").append(button);
+      });
+      $("modal").hidden = false; document.body.style.overflow = "hidden"; $("closeModalButton").focus();
+    }
+    function closeModal() {
+      if ($("modal").hidden) return;
+      $("modal").hidden = true; document.body.style.overflow = "";
+      if (pausedForModal && state.active && !state.locked) startTimer();
+      pausedForModal = false;
+      if (modalPreviousFocus?.isConnected && !modalPreviousFocus.disabled) modalPreviousFocus.focus();
+    }
+    function showLeaderboard() {
+      const entries = getLeaderboard();
+      const content = entries.length ? `
+        <p class="text-slate-300 mb-4">20 keputusan terbaik pada pelayar ini.</p>
+        <div class="overflow-x-auto"><table class="w-full text-left text-lg">
+          <caption class="sr-only">Kedudukan peneroka mengikut mata tertinggi</caption>
+          <thead><tr class="text-cyan-200 border-b border-slate-600"><th scope="col" class="p-3">#</th><th scope="col" class="p-3">Peneroka</th><th scope="col" class="p-3">Tahun</th><th scope="col" class="p-3">Mata</th></tr></thead>
+          <tbody>${entries.map((item,i) => `<tr class="border-b border-slate-700"><td class="p-3">${["🥇","🥈","🥉"][i] || i+1}</td><td class="p-3 break-words">${escapeHTML(item.name)}</td><td class="p-3">${item.level}</td><td class="p-3 text-yellow-300">${item.score}</td></tr>`).join("")}</tbody>
+        </table></div>` : '<div class="text-center py-8 text-xl">🏆 Belum ada keputusan. Jadilah peneroka pertama!</div>';
+      openModal("🏆 Papan Kedudukan",content,[{text:"Tutup",run:closeModal}]);
+    }
+    function showMenu() {
+      const badges = state.inventory.length
+        ? state.inventory.map(item => `<div class="ghost rounded-2xl p-4 text-center"><div class="text-4xl mb-2">${item.emoji}</div><p>${escapeHTML(item.title)}</p></div>`).join("")
+        : '<p class="text-slate-300 col-span-2">Jawab soalan dengan betul untuk mengumpul lencana!</p>';
+      openModal("🎒 Menu & Inventori",`<p class="bg-cyan-950 rounded-xl p-4 text-lg mb-5">⏸️ Masa dihentikan semasa menu dibuka.</p><h3 class="text-xl mb-3">Lencana kamu</h3><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${badges}</div>`,[
+        {text:"Keluar ke Skrin Mula",run:() => {
+          openModal("Keluar daripada permainan?",'<p class="text-xl">Kemajuan misi ini akan hilang. Kedudukan yang telah disimpan kekal tersedia.</p>',[
+            {text:"Teruskan Bermain",primary:true,run:closeModal},
+            {text:"Keluar",run:() => {state.active=false;clearTimer();stopSpeech();closeModal();showScreen("startScreen");}}
+          ]);
+          pausedForModal = true;
+        }},
+        {text:"Sambung Bermain",primary:true,run:closeModal}
+      ]);
+    }
+    function showCertificate() {
+      if (!state.completed) return;
+      const date = new Intl.DateTimeFormat("ms-MY",{day:"numeric",month:"long",year:"numeric"}).format(new Date());
+      openModal("📜 Sijil Digital",`
+        <div class="certificate rounded-xl">
+          <div class="text-5xl mb-4">🏅</div><p class="text-sm tracking-widest uppercase text-cyan-700">Penerokaan Bahasa Melayu</p>
+          <h3 class="text-3xl sm:text-4xl font-semibold my-5">SIJIL PENCAPAIAN</h3>
+          <p class="text-lg">Dengan bangganya diberikan kepada</p><p class="text-3xl sm:text-4xl text-cyan-700 font-semibold my-5 break-words">${escapeHTML(state.name)}</p>
+          <p class="text-lg leading-relaxed">kerana berjaya menyelesaikan kuiz Bahasa Melayu<br><strong>Tahun ${state.level}</strong>.</p>
+          <div class="border-y border-cyan-200 py-4 my-5 text-xl">Mata: <strong>${state.score}/100</strong> &nbsp;•&nbsp; Jawapan betul: <strong>${state.correct}/10</strong></div>
+          <p class="text-lg">${date}</p><p class="text-sm mt-5 text-slate-500">Sijil aktiviti pembelajaran • Dijana secara automatik</p>
+        </div><p class="text-slate-300 mt-4">Pilih “Simpan sebagai PDF” dalam tetingkap cetakan untuk menyimpan sijil.</p>`,
+        [{text:"Tutup",run:closeModal},{text:"Cetak / Simpan PDF",primary:true,run:() => window.print()}]);
+    }
+    function showPractice() {
+      practice = {words:["Adik","membaca","buku"],order:[],solved:false};
+      openModal("🧩 Susun Perkataan",`
+        <p class="text-lg text-slate-300 mb-5">Susun ayat yang betul. Tekan perkataan untuk memasukkan atau mengeluarkannya.</p>
+        <h3 class="text-xl mb-3">Pilihan perkataan</h3><div id="wordBank" class="flex flex-wrap gap-3 mb-6"></div>
+        <h3 class="text-xl mb-3">Ayat kamu</h3><div id="wordDropzone" class="dropzone flex flex-wrap items-center gap-3 p-3" aria-label="Ruang susunan ayat"></div>
+        <p id="practiceFeedback" class="text-lg mt-4" role="status"></p>`,
+        [{text:"Susun Semula",run:() => {practice.order=[];practice.solved=false;renderPractice();}},
+         {text:"Semak Ayat",primary:true,run:checkPractice}]);
+      renderPractice();
+    }
+    function renderPractice() {
+      const bank=$("wordBank"), zone=$("wordDropzone"); bank.replaceChildren(); zone.replaceChildren();
+      [2,0,1].filter(index => !practice.order.includes(index)).forEach(index => bank.append(createWordButton(index,false)));
+      practice.order.forEach(index => zone.append(createWordButton(index,true)));
+      if (!practice.order.length) { const hint=document.createElement("span");hint.className="text-slate-400";hint.textContent="Letakkan perkataan di sini…";zone.append(hint); }
+      $("practiceFeedback").textContent="";
+    }
+    function createWordButton(index,inSentence) {
+      const button=document.createElement("button");button.className="word";button.textContent=practice.words[index];
+      button.setAttribute("aria-label",`${inSentence ? "Keluarkan" : "Tambah"} perkataan ${practice.words[index]}`);
+      button.addEventListener("click",() => {
+        practice.solved=false;
+        if (inSentence) practice.order=practice.order.filter(value => value!==index);
+        else if (!practice.order.includes(index)) practice.order.push(index);
+        renderPractice();
+      });
+      return button;
+    }
+    function checkPractice() {
+      if (practice.order.length!==3) { $("practiceFeedback").textContent="💡 Masukkan ketiga-tiga perkataan dahulu.";return; }
+      const correct=practice.order.every((value,index) => value===index);
+      $("practiceFeedback").textContent=correct ? "🌟 Betul! Adik membaca buku." : "💪 Cuba lagi. Mulakan ayat dengan orang yang melakukan perbuatan.";
+      if (correct && !practice.solved) {practice.solved=true;playSound("correct");}
+    }
+
+    $("startButton").addEventListener("click",startGame);
+    $("replayButton").addEventListener("click",startGame);
+    $("homeButton").addEventListener("click",() => {clearTimer();stopSpeech();state.active=false;showScreen("startScreen");});
+    $("leaderboardButton").addEventListener("click",showLeaderboard);
+    $("resultLeaderboardButton").addEventListener("click",showLeaderboard);
+    $("practiceButton").addEventListener("click",showPractice);
+    $("certificateButton").addEventListener("click",showCertificate);
+    $("menuButton").addEventListener("click",showMenu);
+    $("readButton").addEventListener("click",speakQuestion);
+    $("closeModalButton").addEventListener("click",closeModal);
+    $("nextButton").addEventListener("click",() => {
+      if (!state.locked || !state.active) return;
+      if (state.lives===0 || state.index===state.questions.length-1) finishGame();
+      else {state.index++;renderQuestion();}
+    });
+    $("soundButton").addEventListener("click",() => {
+      state.sound=!state.sound;unlockAudio();updateSoundButton();
+      if (!writeStorage(SETTINGS_KEY,{sound:state.sound})) toast("Tetapan bunyi hanya digunakan untuk sesi ini.");
+    });
+    $("modal").addEventListener("click",event => {if(event.target===$("modal")) closeModal();});
+    document.addEventListener("keydown",event => {
+      if (!$("modal").hidden) {if(event.key==="Escape"){event.preventDefault();closeModal();}return;}
+      if (state.active && !state.locked && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const index="abcd".indexOf(event.key.toLowerCase());
+        if(index>=0){event.preventDefault();answerQuestion(index);}
+      }
+    });
+    const settings=readStorage(SETTINGS_KEY,{sound:true});
+    state.sound=settings?.sound!==false;
+    updateSoundButton();
+  </script>
+</body>
+</html>
